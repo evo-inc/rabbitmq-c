@@ -286,7 +286,6 @@ exit:
 	OPENSSL_free(utf8_value);
 	return sockfd;
 error:
-	OPENSSL_free(utf8_value);
 	amqp_ssl_socket_close(-1, self);
 	sockfd = -1;
 	goto exit;
