@@ -311,7 +311,8 @@ typedef struct amqp_rpc_reply_t_ {
 } amqp_rpc_reply_t;
 
 typedef enum amqp_sasl_method_enum_ {
-  AMQP_SASL_METHOD_PLAIN = 0
+  AMQP_SASL_METHOD_PLAIN = 0,
+  AMQP_SASL_METHOD_EVOZ = 1,
 } amqp_sasl_method_enum;
 
 /* Opaque struct. */

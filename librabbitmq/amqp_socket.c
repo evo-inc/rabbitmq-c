@@ -44,6 +44,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+#include <openssl/hmac.h>
+#include <openssl/sha.h>
+
+void evoz_signature(char* signature, const char* udid, const char* serial, const char* key, long long now, char* expiryString);
 
 int amqp_open_socket(char const *hostname,
 		     int portnumber)
@@ -97,6 +103,11 @@ static amqp_bytes_t sasl_method_name(amqp_sasl_method_enum method) {
     res.bytes = "PLAIN";
     res.len = 5;
     break;
+  
+  case AMQP_SASL_METHOD_EVOZ:
+    res.bytes = "EVOZ";
+    res.len = 4;
+    break;
 
   default:
     amqp_abort("Invalid SASL method: %d", (int) method);
@@ -132,6 +143,39 @@ static amqp_bytes_t sasl_response(amqp_pool_t *pool,
       memcpy(response_buf + username_len + 2, password, password_len);
       break;
     }
+    case AMQP_SASL_METHOD_EVOZ: {
+      char *udid = va_arg(args, char *);
+      size_t udid_len = strlen(udid);
+      char *key = va_arg(args, char *);
+      char* serial = va_arg(args, char*);
+      long long now = va_arg(args, long long);
+
+      char hmac64[100];
+      char expiry[23];
+      evoz_signature(hmac64, udid, serial, key, now, expiry);
+      size_t hmac64_len = strlen(hmac64);
+
+      size_t expiry_len = strlen(expiry);
+
+      char *response_buf;
+      amqp_pool_alloc_bytes(pool, udid_len + hmac64_len + expiry_len + 3, &response);
+      if (response.bytes == NULL)
+          /* We never request a zero-length block, because of the +2
+             +           above, so a NULL here really is ENOMEM. */
+              return response;
+
+      printf("udid: '%s'\nserial: '%s'\nkey: '%s'\nexpiry: %s\nsignature: '%s'\n", udid, serial, key, expiry, hmac64);
+
+      response_buf = response.bytes;
+      response_buf[0] = 0;
+      memcpy(response_buf + 1, udid, udid_len);
+      response_buf[udid_len + 1] = 0;
+      memcpy(response_buf + udid_len + 2, hmac64, hmac64_len);
+      response_buf[udid_len + hmac64_len + 2] = 0;
+      memcpy(response_buf + udid_len + hmac64_len + 3, expiry, expiry_len);
+      break;
+    }
+
     default:
       amqp_abort("Invalid SASL method: %d", (int) method);
   }
@@ -516,4 +560,69 @@ amqp_rpc_reply_t amqp_login(amqp_connection_state_t state,
   result.reply.decoded = NULL;
   result.library_error = 0;
   return result;
+}
+
+char b64string[] =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+long base64_encode (to, from, len)
+char *to, *from;
+unsigned int len;
+{
+  char *fromp = from;
+  char *top = to;
+  unsigned char cbyte;
+  unsigned char obyte;
+  char end[3];
+
+  for (; len >= 3; len -= 3) {
+    cbyte = *fromp++;
+    *top++ = b64string[(int)(cbyte >> 2)];
+    obyte = (cbyte << 4) & 0x30;            /* 0011 0000 */
+
+    cbyte = *fromp++;
+    obyte |= (cbyte >> 4);                  /* 0000 1111 */
+    *top++ = b64string[(int)obyte];
+    obyte = (cbyte << 2) & 0x3C;            /* 0011 1100 */
+
+    cbyte = *fromp++;
+    obyte |= (cbyte >> 6);                  /* 0000 0011 */
+    *top++ = b64string[(int)obyte];
+    *top++ = b64string[(int)(cbyte & 0x3F)];/* 0011 1111 */
+  }
+
+  if (len) {
+    end[0] = *fromp++;
+    if (--len) end[1] = *fromp++; else end[1] = 0;
+    end[2] = 0;
+
+    cbyte = end[0];
+    *top++ = b64string[(int)(cbyte >> 2)];
+    obyte = (cbyte << 4) & 0x30;            /* 0011 0000 */
+
+    cbyte = end[1];
+    obyte |= (cbyte >> 4);
+    *top++ = b64string[(int)obyte];
+    obyte = (cbyte << 2) & 0x3C;            /* 0011 1100 */
+
+    if (len) *top++ = b64string[(int)obyte];
+    else *top++ = '=';
+    *top++ = '=';
+  }
+  *top = 0;
+  return top - to;
+}
+
+void evoz_signature(char* signature, const char* udid, const char* serial, const char* key, long long now, char* expiryString) {
+  uint64_t expiry = now + 300;
+  sprintf(expiryString, "%qd", expiry);
+
+  char res[SHA_DIGEST_LENGTH];
+  unsigned int len = sizeof(res);
+
+  char* stringToSign = malloc(strlen(udid) + strlen(serial) + 23);
+  sprintf(stringToSign, "%s\n%s\n%s", udid, serial, expiryString);
+  HMAC(EVP_sha1(), (unsigned char*) key, (int) strlen(key), (unsigned char*) stringToSign, strlen(stringToSign), (unsigned char*) res, &len);
+  free(stringToSign);
+  base64_encode(signature, res, len);
 }
