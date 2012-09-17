@@ -107,7 +107,7 @@ struct iovec;
 # endif
 # define AMQP_CALL __cdecl
 
-#elif defined(__GNUC__) && __GNUC__ >= 4
+#elif defined(__GNUC__) && __GNUC__ >= 3
 # include <sys/uio.h>
 # define AMQP_PUBLIC_FUNCTION \
   __attribute__ ((visibility ("default")))
