@@ -170,13 +170,27 @@ amqp_ssl_socket_error(AMQP_UNUSED void *user_data)
 	return -1;
 }
 
+/* I have no way but do this.
+ * The problem is that on our devices standard domain lookup
+ * does not work (broken), so we need to resolve host first
+ * using special function and pass this value (ip) as 
+ * a parameter to different functions. So it might not be possible to
+ * pass original host value to amqp_open_ssl_socket and make it working.
+ * We pass IP address, but this function compares this host with server host
+ * and if this values differ - it fails: IP != host - fail. That's why
+ * we pass new parameter host_to_compare.
+ *
+ * NOTE: if you don't understand what is this text about - do NOT use
+ * this function, use amqp_open_ssl_socket instead
+ */
 int
-amqp_open_ssl_socket(amqp_connection_state_t state,
-		     const char *host,
-		     int port,
-		     const char *cacert,
-		     const char *key,
-		     const char *cert)
+amqp_open_ssl_socket2(amqp_connection_state_t state,
+		      const char *host,
+		      int port,
+		      const char *cacert,
+		      const char *key,
+		      const char *cert,
+              const char *host_to_compare)
 {
 	SSL *ssl;
 	X509 *peer;
@@ -268,7 +282,9 @@ amqp_open_ssl_socket(amqp_connection_state_t state,
 #ifdef _MSC_VER
 #define strcasecmp _stricmp
 #endif
-	if (strcasecmp(host, (char *)utf8_value)) {
+    if ((host_to_compare) && (strcasecmp(host_to_compare, (char *)utf8_value))) {
+        goto error;
+    } else if ((!host_to_compare) && (strcasecmp(host, (char *)utf8_value))) {
 		goto error;
 	}
 #ifdef _MSC_VER
@@ -289,6 +305,17 @@ error:
 	amqp_ssl_socket_close(-1, self);
 	sockfd = -1;
 	goto exit;
+}
+
+int
+amqp_open_ssl_socket(amqp_connection_state_t state,
+		      const char *host,
+		      int port,
+		      const char *cacert,
+		      const char *key,
+		      const char *cert)
+{
+    return amqp_open_ssl_socket2(state, host, port, cacert, key, cert, NULL);
 }
 
 void

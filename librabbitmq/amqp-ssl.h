@@ -59,6 +59,21 @@ amqp_open_ssl_socket(amqp_connection_state_t state,
 		     const char *key,
 		     const char *cert);
 
+#ifdef SSL_OPENSSL
+/* Do NOT use this function, until you know what you do:
+ * Use amqp_open_ssl_socket instead.
+ * */
+AMQP_PUBLIC_FUNCTION
+int
+amqp_open_ssl_socket2(amqp_connection_state_t state,
+		     const char *host,
+		     int port,
+		     const char *cacert,
+		     const char *key,
+		     const char *cert,
+             const char* host_to_compare);
+#endif
+
 /**
  * Sets whether rabbitmq-c initializes the underlying SSL library
  *

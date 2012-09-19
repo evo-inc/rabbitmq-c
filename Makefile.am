@@ -22,6 +22,7 @@ endif
 
 if SSL_OPENSSL
 librabbitmq_librabbitmq_la_SOURCES += librabbitmq/amqp-openssl.c
+CFLAGS += -DSSL_OPENSSL
 endif
 
 if SSL_POLARSSL
