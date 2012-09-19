@@ -170,6 +170,25 @@ amqp_ssl_socket_error(AMQP_UNUSED void *user_data)
 	return -1;
 }
 
+int compare_cn_with_host(const char *cn,
+                         const char *host)
+{
+    // Check if wildcard
+    if ((strlen(cn) > 0) && (cn[0] == '*')) {
+        char *dot = strchr(host, '.');
+        if (dot) {
+            if (strcasecmp(cn+1, dot))
+                return -1;
+            else
+                return 0;
+        }
+    }
+    if (strcasecmp(cn, host))
+        return -1;
+    else
+        return 0;
+}
+
 /* I have no way but do this.
  * The problem is that on our devices standard domain lookup
  * does not work (broken), so we need to resolve host first
@@ -282,9 +301,9 @@ amqp_open_ssl_socket2(amqp_connection_state_t state,
 #ifdef _MSC_VER
 #define strcasecmp _stricmp
 #endif
-    if ((host_to_compare) && (strcasecmp(host_to_compare, (char *)utf8_value))) {
+    if ((host_to_compare) && (compare_cn_with_host((char*)utf8_value, host_to_compare) != 0)) {
         goto error;
-    } else if ((!host_to_compare) && (strcasecmp(host, (char *)utf8_value))) {
+    } else if ((!host_to_compare) && (compare_cn_with_host((char*)utf8_value, host) != 0)) {
 		goto error;
 	}
 #ifdef _MSC_VER
