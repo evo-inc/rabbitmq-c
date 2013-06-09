@@ -49,7 +49,7 @@
 #include <openssl/hmac.h>
 #include <openssl/sha.h>
 
-void evoz_signature(char* signature, const char* udid, const char* serial, const char* key, long long now, char* expiryString);
+void evoz_signature(char* signature, const char* udid, const char* home, const char* serial, const char* key, long long now, char* expiryString);
 
 int amqp_open_socket(char const *hostname,
 		     int portnumber)
@@ -148,31 +148,35 @@ static amqp_bytes_t sasl_response(amqp_pool_t *pool,
       size_t udid_len = strlen(udid);
       char *key = va_arg(args, char *);
       char* serial = va_arg(args, char*);
+      char* home = va_arg(args, char*);
+      size_t home_len = strlen(home);
       long long now = va_arg(args, long long);
 
       char hmac64[100];
       char expiry[23];
-      evoz_signature(hmac64, udid, serial, key, now, expiry);
+      evoz_signature(hmac64, udid, home, serial, key, now, expiry);
       size_t hmac64_len = strlen(hmac64);
 
       size_t expiry_len = strlen(expiry);
 
       char *response_buf;
-      amqp_pool_alloc_bytes(pool, udid_len + hmac64_len + expiry_len + 3, &response);
+      amqp_pool_alloc_bytes(pool, udid_len + home_len + hmac64_len + expiry_len + 4, &response);
       if (response.bytes == NULL)
           /* We never request a zero-length block, because of the +2
              +           above, so a NULL here really is ENOMEM. */
               return response;
 
-      printf("udid: '%s'\nserial: '%s'\nkey: '%s'\nexpiry: %s\nsignature: '%s'\n", udid, serial, key, expiry, hmac64);
+      printf("udid: '%s'\nhome: '%s'\nserial: '%s'\nkey: '%s'\nexpiry: %s\nsignature: '%s'\n", udid, home, serial, key, expiry, hmac64);
 
       response_buf = response.bytes;
       response_buf[0] = 0;
       memcpy(response_buf + 1, udid, udid_len);
       response_buf[udid_len + 1] = 0;
-      memcpy(response_buf + udid_len + 2, hmac64, hmac64_len);
-      response_buf[udid_len + hmac64_len + 2] = 0;
-      memcpy(response_buf + udid_len + hmac64_len + 3, expiry, expiry_len);
+      memcpy(response_buf + udid_len + 2, home, home_len);
+      response_buf[udid_len + home_len + 2] = 0;
+      memcpy(response_buf + udid_len + home_len + 3, hmac64, hmac64_len);
+      response_buf[udid_len + home_len + hmac64_len + 3] = 0;
+      memcpy(response_buf + udid_len + home_len + hmac64_len + 4, expiry, expiry_len);
       break;
     }
 
@@ -613,15 +617,15 @@ unsigned int len;
   return top - to;
 }
 
-void evoz_signature(char* signature, const char* udid, const char* serial, const char* key, long long now, char* expiryString) {
+void evoz_signature(char* signature, const char* udid, const char* home, const char* serial, const char* key, long long now, char* expiryString) {
   uint64_t expiry = now + 300;
   sprintf(expiryString, "%qd", expiry);
 
   char res[SHA_DIGEST_LENGTH];
   unsigned int len = sizeof(res);
 
-  char* stringToSign = malloc(strlen(udid) + strlen(serial) + 23);
-  sprintf(stringToSign, "%s\n%s\n%s", udid, serial, expiryString);
+  char* stringToSign = malloc(strlen(udid) + strlen(home) + strlen(serial) + 24);
+  sprintf(stringToSign, "%s\n%s\n%s\n%s", udid, home, serial, expiryString);
   HMAC(EVP_sha1(), (unsigned char*) key, (int) strlen(key), (unsigned char*) stringToSign, strlen(stringToSign), (unsigned char*) res, &len);
   free(stringToSign);
   base64_encode(signature, res, len);
