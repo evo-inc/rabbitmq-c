@@ -150,6 +150,8 @@ static amqp_bytes_t sasl_response(amqp_pool_t *pool,
       char* serial = va_arg(args, char*);
       char* home = va_arg(args, char*);
       size_t home_len = strlen(home);
+      char* extra = va_arg(args, char*);
+      size_t extra_len = strlen(extra);
       long long now = va_arg(args, long long);
 
       char hmac64[100];
@@ -160,7 +162,7 @@ static amqp_bytes_t sasl_response(amqp_pool_t *pool,
       size_t expiry_len = strlen(expiry);
 
       char *response_buf;
-      amqp_pool_alloc_bytes(pool, udid_len + home_len + hmac64_len + expiry_len + 4, &response);
+      amqp_pool_alloc_bytes(pool, udid_len + home_len + hmac64_len + expiry_len + extra_len + 5, &response);
       if (response.bytes == NULL)
           /* We never request a zero-length block, because of the +2
              +           above, so a NULL here really is ENOMEM. */
@@ -177,6 +179,8 @@ static amqp_bytes_t sasl_response(amqp_pool_t *pool,
       memcpy(response_buf + udid_len + home_len + 3, hmac64, hmac64_len);
       response_buf[udid_len + home_len + hmac64_len + 3] = 0;
       memcpy(response_buf + udid_len + home_len + hmac64_len + 4, expiry, expiry_len);
+      response_buf[udid_len + home_len + hmac64_len + expiry_len + 4] = 0;
+      memcpy(response_buf + udid_len + home_len + hmac64_len + expiry_len + 5, extra, extra_len);
       break;
     }
 
