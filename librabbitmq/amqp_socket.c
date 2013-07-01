@@ -168,7 +168,7 @@ static amqp_bytes_t sasl_response(amqp_pool_t *pool,
              +           above, so a NULL here really is ENOMEM. */
               return response;
 
-      printf("udid: '%s'\nhome: '%s'\nserial: '%s'\nkey: '%s'\nexpiry: %s\nsignature: '%s'\n", udid, home, serial, key, expiry, hmac64);
+      //printf("udid: '%s'\nhome: '%s'\nserial: '%s'\nkey: '%s'\nexpiry: %s\nsignature: '%s'\n", udid, home, serial, key, expiry, hmac64);
 
       response_buf = response.bytes;
       response_buf[0] = 0;
