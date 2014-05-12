@@ -414,6 +414,19 @@ amqp_rpc_reply_t amqp_get_rpc_reply(amqp_connection_state_t state)
 }
 
 
+int evo_get_version(char *buffer, int bufsize) {
+  FILE *pf = popen("/usr/libexec/evo/evo-hub --version", "r");
+  if (pf == NULL) {
+    return -1;
+  }
+  fgets(buffer, bufsize, pf);
+  buffer[(strlen(buffer) -1)] = '\0';
+
+  pclose(pf);
+  return 0;
+}
+
+
 static int amqp_login_inner(amqp_connection_state_t state,
 			    int channel_max,
 			    int frame_max,
@@ -447,7 +460,10 @@ static int amqp_login_inner(amqp_connection_state_t state,
   }
 
   {
-    amqp_table_entry_t properties[2];
+    char buffer_evo_version[BUFSIZ];
+    int evo_ver_res = -1;
+
+    amqp_table_entry_t properties[3];
     amqp_connection_start_ok_t s;
     amqp_bytes_t response_bytes = sasl_response(&state->decoding_pool,
 						sasl_method, vl);
@@ -465,7 +481,20 @@ static int amqp_login_inner(amqp_connection_state_t state,
     properties[1].value.value.bytes
       = amqp_cstring_bytes("See http://hg.rabbitmq.com/rabbitmq-c/");
 
-    s.client_properties.num_entries = 2;
+    memset(buffer_evo_version, 0, BUFSIZ);
+    evo_ver_res = evo_get_version(buffer_evo_version, BUFSIZ);
+    properties[2].key = amqp_cstring_bytes("evo_version");
+    properties[2].value.kind = AMQP_FIELD_KIND_UTF8;
+    if(evo_ver_res < 0){
+      properties[2].value.value.bytes
+        = amqp_cstring_bytes("0.0.0");
+    }
+    else {
+      properties[2].value.value.bytes
+        = amqp_cstring_bytes(buffer_evo_version);
+    }
+
+    s.client_properties.num_entries = 3;
     s.client_properties.entries = properties;
     s.mechanism = sasl_method_name(sasl_method);
     s.response = response_bytes;
