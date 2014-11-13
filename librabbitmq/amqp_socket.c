@@ -533,9 +533,9 @@ static amqp_bytes_t sasl_response(amqp_pool_t *pool,
       char hmac64[100];
       char expiry[23];
       evoz_signature(hmac64, udid, home, serial, key, now, expiry);
-      size_t hmac64_len = strlen(hmac64);
+      size_t hmac64_len = strnlen(hmac64, 100);
       
-      size_t expiry_len = strlen(expiry);
+      size_t expiry_len = strnlen(expiry, 23);
       
       char *response_buf;
       amqp_pool_alloc_bytes(pool, udid_len + home_len + hmac64_len + expiry_len + extra_len + 5, &response);
