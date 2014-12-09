@@ -1012,29 +1012,6 @@ int
 AMQP_CALL amqp_get_sockfd(amqp_connection_state_t state);
 
 
-/**
- * Deprecated, use amqp_tcp_socket_new() or amqp_ssl_socket_new()
- *
- * \deprecated Use amqp_tcp_socket_new() or amqp_ssl_socket_new()
- *
- * Sets the socket descriptor associated with the connection. The socket
- * should be connected to a broker, and should not be read to or written from
- * before calling this function.  A socket descriptor can be created and opened
- * using amqp_open_socket()
- *
- * \param [in] state the connection object
- * \param [in] sockfd the socket
- *
- * \sa amqp_open_socket(), amqp_tcp_socket_new(), amqp_ssl_socket_new()
- *
- * \since v0.1
- */
-AMQP_DEPRECATED(
-  AMQP_PUBLIC_FUNCTION
-  void
-  AMQP_CALL amqp_set_sockfd(amqp_connection_state_t state, int sockfd)
-);
-
 
 /**
  * Tune client side parameters
