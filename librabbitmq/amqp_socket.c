@@ -135,7 +135,7 @@ amqp_os_socket_socket(int domain, int type, int protocol)
 
 static int
 amqp_os_socket_setsockopt(int sock, int level, int optname,
-                       const void *optval, size_t optlen)
+                       const void *optval, int optlen)
 {
 #ifdef _WIN32
   /* the winsock setsockopt function has its 4th argument as a
@@ -199,7 +199,7 @@ amqp_os_socket_close(int sockfd)
 #endif
 }
 
-ssize_t
+int
 amqp_socket_writev(amqp_socket_t *self, struct iovec *iov, int iovcnt)
 {
   assert(self);
@@ -207,7 +207,7 @@ amqp_socket_writev(amqp_socket_t *self, struct iovec *iov, int iovcnt)
   return self->klass->writev(self, iov, iovcnt);
 }
 
-ssize_t
+int
 amqp_socket_send(amqp_socket_t *self, const void *buf, size_t len)
 {
   assert(self);
@@ -215,7 +215,7 @@ amqp_socket_send(amqp_socket_t *self, const void *buf, size_t len)
   return self->klass->send(self, buf, len);
 }
 
-ssize_t
+int
 amqp_socket_recv(amqp_socket_t *self, void *buf, size_t len, int flags)
 {
   assert(self);
@@ -377,7 +377,7 @@ int amqp_open_socket_noblock(char const *hostname,
             break;
           }
 
-          timeout_ms = timer.tv.tv_sec * AMQP_MS_PER_S +
+          timeout_ms = (int)timer.tv.tv_sec * AMQP_MS_PER_S +
               timer.tv.tv_usec / AMQP_US_PER_MS;
           /* Win32 requires except_fds to be passed to detect connection
            * failure. Other platforms only need write_fds, passing except_fds
@@ -625,7 +625,7 @@ static int recv_with_timeout(amqp_connection_state_t state, uint64_t start, stru
       pfd.events = POLLIN;
       pfd.revents = 0;
 
-      timeout_ms = timeout->tv_sec * AMQP_MS_PER_S +
+      timeout_ms = (int)timeout->tv_sec * AMQP_MS_PER_S +
           timeout->tv_usec / AMQP_US_PER_MS;
 
       res = poll(&pfd, 1, timeout_ms);

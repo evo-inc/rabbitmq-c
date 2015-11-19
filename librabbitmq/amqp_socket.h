@@ -39,9 +39,9 @@ int
 amqp_os_socket_close(int sockfd);
 
 /* Socket callbacks. */
-typedef ssize_t (*amqp_socket_writev_fn)(void *, struct iovec *, int);
-typedef ssize_t (*amqp_socket_send_fn)(void *, const void *, size_t);
-typedef ssize_t (*amqp_socket_recv_fn)(void *, void *, size_t, int);
+typedef int (*amqp_socket_writev_fn)(void *, struct iovec *, int);
+typedef int (*amqp_socket_send_fn)(void *, const void *, size_t);
+typedef int (*amqp_socket_recv_fn)(void *, void *, size_t, int);
 typedef int (*amqp_socket_open_fn)(void *, const char *, int, struct timeval *);
 typedef int (*amqp_socket_close_fn)(void *);
 typedef int (*amqp_socket_get_sockfd_fn)(void *);
@@ -101,7 +101,7 @@ amqp_set_socket(amqp_connection_state_t state, amqp_socket_t *socket);
  *
  * \return AMQP_STATUS_OK on success. amqp_status_enum value otherwise
  */
-ssize_t
+int
 amqp_socket_writev(amqp_socket_t *self, struct iovec *iov, int iovcnt);
 
 /**
@@ -118,7 +118,7 @@ amqp_socket_writev(amqp_socket_t *self, struct iovec *iov, int iovcnt);
  *
  * \return AMQP_STATUS_OK on success. amqp_status_enum value otherwise
  */
-ssize_t
+int
 amqp_socket_send(amqp_socket_t *self, const void *buf, size_t len);
 
 /**
@@ -133,7 +133,7 @@ amqp_socket_send(amqp_socket_t *self, const void *buf, size_t len);
  *
  * \return The number of bytes received, or < 0 on error (\ref amqp_status_enum)
  */
-ssize_t
+int
 amqp_socket_recv(amqp_socket_t *self, void *buf, size_t len, int flags);
 
 /**

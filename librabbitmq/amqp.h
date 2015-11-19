@@ -2185,7 +2185,7 @@ struct amqp_connection_info {
   char *password;             /**< the password to authenticate with the broker, default on most brokers is 'guest' */
   char *host;                 /**< the hostname of the broker */
   char *vhost;                /**< the virtual host on the broker to connect to, a good default is "/" */
-  int port;                   /**< the port that the broker is listening on, default on most brokers is 5672 */
+  long port;                   /**< the port that the broker is listening on, default on most brokers is 5672 */
   amqp_boolean_t ssl;
 };
 
