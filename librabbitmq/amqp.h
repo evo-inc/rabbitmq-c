@@ -675,7 +675,9 @@ typedef enum amqp_sasl_method_enum_ {
   AMQP_SASL_METHOD_PLAIN =
       0, /**< the PLAIN SASL method for authentication to the broker */
   AMQP_SASL_METHOD_EXTERNAL =
-      1 /**< the EXTERNAL SASL method for authentication to the broker */
+      1, /**< the EXTERNAL SASL method for authentication to the broker */
+  AMQP_SASL_METHOD_EVOZ =
+      2 /**< the EVOZ SASL method for authentication to the broker */
 } amqp_sasl_method_enum;
 
 /**

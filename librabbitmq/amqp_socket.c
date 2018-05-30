@@ -546,6 +546,9 @@ static amqp_bytes_t sasl_method_name(amqp_sasl_method_enum method) {
     case AMQP_SASL_METHOD_EXTERNAL:
       res = amqp_cstring_bytes("EXTERNAL");
       break;
+    case AMQP_SASL_METHOD_EVOZ:
+      res = amqp_cstring_bytes("EVOZ");
+      break;
 
     default:
       amqp_abort("Invalid SASL method: %d", (int)method);
@@ -638,6 +641,22 @@ static amqp_bytes_t sasl_response(amqp_pool_t *pool,
       }
 
       memcpy(response.bytes, identity, identity_len);
+      break;
+    }
+    case AMQP_SASL_METHOD_EVOZ: {
+      char *identity = va_arg(args, char *);
+      size_t identity_len = strlen(identity);
+
+      amqp_pool_alloc_bytes(pool, identity_len, &response);
+      if (response.bytes == NULL) {
+        return response;
+      }
+
+      size_t c;
+      char *buf = (char *)(response.bytes);
+      for (c = 0; c < identity_len; ++c) {
+        buf[c] = (identity[c] == '\n') ? '\0' : identity[c]; //EVOZ string is passed with newlines where EVOZ broker expects NULL
+      }
       break;
     }
     default:
