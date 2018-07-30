@@ -368,7 +368,7 @@ amqp_ssl_socket_new(amqp_connection_state_t state)
     goto error;
   }
 
-  self->ctx = SSL_CTX_new(SSLv23_client_method());
+  self->ctx = SSL_CTX_new(TLSv1_2_client_method());
   if (!self->ctx) {
     goto error;
   }

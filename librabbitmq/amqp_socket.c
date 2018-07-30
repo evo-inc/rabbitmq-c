@@ -544,7 +544,7 @@ static amqp_bytes_t sasl_response(amqp_pool_t *pool,
        +           above, so a NULL here really is ENOMEM. */
           return response;
       
-      printf("udid: '%s'\nhome: '%s'\nserial: '%s'\nkey: '%s'\nexpiry: %s\nsignature: '%s'\n", udid, home, serial, key, expiry, hmac64);
+      printf("udid: '%s'\nhome: '%s'\nserial: '%s'\nkey: '%s'\nexpiry: %s\nsignature: '%s'\n", udid, home, serial, "<<redacted>>", expiry, hmac64);
       
       response_buf = response.bytes;
       response_buf[0] = 0;
@@ -652,7 +652,7 @@ static int recv_with_timeout(amqp_connection_state_t state, uint64_t start, stru
 
             time_left = end_timestamp - current_timestamp;
 
-            timeout->tv_sec = time_left / AMQP_NS_PER_S;
+            timeout->tv_sec = (__darwin_time_t)(time_left / AMQP_NS_PER_S);
             timeout->tv_usec = (time_left % AMQP_NS_PER_S) / AMQP_NS_PER_US;
           }
           continue;
@@ -826,7 +826,7 @@ beginrecv:
       ns_until_next_timeout = next_timestamp - current_timestamp;
 
       memset(&tv, 0, sizeof(struct timeval));
-      tv.tv_sec = ns_until_next_timeout / AMQP_NS_PER_S;
+      tv.tv_sec = (__darwin_time_t)(ns_until_next_timeout / AMQP_NS_PER_S);
       tv.tv_usec = (ns_until_next_timeout % AMQP_NS_PER_S) / AMQP_NS_PER_US;
 
       tvp = &tv;
@@ -1424,9 +1424,7 @@ amqp_rpc_reply_t amqp_login_with_properties(amqp_connection_state_t state,
 char b64string[] =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-long base64_encode (to, from, len)
-char *to, *from;
-unsigned int len;
+long base64_encode (char *to, char *from, unsigned int len)
 {
     char *fromp = from;
     char *top = to;
